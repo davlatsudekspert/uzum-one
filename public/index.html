@@ -747,11 +747,11 @@ body.dark .bottom-nav .bnav-badge{border-color:#0f172a}
 
 /* ── MOBILE (max-width:520px) ── */
 @media(max-width:520px){
-  .main{padding:0 10px 20px;margin-top:12px}
+  .main{padding:0 10px 24px;margin-top:12px}
 
   /* Modal full-screen on mobile */
   .overlay{padding:0}
-  .modal{border-radius:var(--r-xl) var(--r-xl) 0 0;max-height:92vh;margin-top:auto;
+  .modal{border-radius:var(--r-xl) var(--r-xl) 0 0;max-height:90vh;margin-top:auto;
     border-bottom:none;animation:modalSlideUp 0.35s cubic-bezier(0.34,1.56,0.64,1)}
   .overlay .modal{animation:modalSlideUp 0.35s cubic-bezier(0.34,1.56,0.64,1)}
   @keyframes modalSlideUp{0%{opacity:0;transform:translateY(100%)}100%{opacity:1;transform:translateY(0)}}
@@ -759,6 +759,22 @@ body.dark .bottom-nav .bnav-badge{border-color:#0f172a}
   .modal-header{padding:16px 16px 0}
   .modal-header h3{font-size:16px}
   .modal-body{padding:12px 16px 20px}
+
+  /* Product grid — 2 columns, proper card sizing */
+  .prod-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .pcard{border-radius:var(--r-lg)}
+  .pcard-img{height:145px}
+  .pcard-body{padding:8px 9px 10px}
+  .pcard-name{font-size:12px;line-height:1.25}
+  .pcard-desc{font-size:9.5px;margin-bottom:3px}
+  .pcard-loc-wrap{margin-bottom:4px}
+  .pcard-price{font-size:13.5px}
+  .pcard-cart{width:30px;height:30px;border-radius:8px}
+  .pcard-cart svg{width:13px;height:13px}
+  .pcard-like{width:28px;height:28px;top:6px;right:6px}
+  .pcard-like svg{width:13px;height:13px}
+  .pcard-foot{gap:4px;padding-top:6px}
+  .pcard-badge{font-size:8.5px;padding:2px 7px}
 
   /* Cart on mobile */
   .cart-wrap{grid-template-columns:1fr;gap:12px}
@@ -845,23 +861,29 @@ body.dark .bottom-nav .bnav-badge{border-color:#0f172a}
   .search-box input{font-size:12px}
   .prof-av{width:32px;height:32px;font-size:12px}
   .lang-btn{padding:5px 8px;font-size:10px}
-  .prod-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .pcard-img{height:130px}
-  .pcard-body{padding:8px 9px 10px}
-  .pcard-name{font-size:11.5px}
-  .pcard-desc{font-size:9px}
-  .pcard-price{font-size:13px}
-  .pcard-cart{width:28px;height:28px}
-  .pcard-cart svg{width:12px;height:12px}
-  .pcard-like{width:26px;height:26px;top:6px;right:6px}
-  .pcard-like svg{width:12px;height:12px}
-  .pcard-badge{font-size:8px;padding:2px 7px}
+  .main{padding:0 8px 24px}
+  .prod-grid{grid-template-columns:repeat(2,1fr);gap:7px}
+  .pcard-img{height:120px}
+  .pcard-body{padding:7px 8px 9px}
+  .pcard-name{font-size:11px;line-height:1.2}
+  .pcard-desc{display:none}
+  .pcard-loc-wrap{margin-bottom:2px}
+  .pcard-price{font-size:12.5px}
+  .pcard-cart{width:26px;height:26px;border-radius:7px}
+  .pcard-cart svg{width:11px;height:11px}
+  .pcard-like{width:24px;height:24px;top:5px;right:5px;border-radius:7px}
+  .pcard-like svg{width:11px;height:11px}
+  .pcard-foot{padding-top:5px}
+  .pcard-badge{font-size:8px;padding:2px 6px}
   .carousel{height:140px}
   .c-slide .title{font-size:16px}
   .c-slide .sub{font-size:11px}
   .section-top h2{font-size:15px}
   .bottom-nav .bnav-sell{width:46px;height:46px;margin-top:-18px}
   .bottom-nav .bnav-sell svg{width:20px;height:20px}
+  .bottom-nav{height:64px}
+  .bottom-nav .bnav-item{padding:6px 0 4px}
+  .bottom-nav .bnav-item span{font-size:9px}
 }
 
 /* ── LARGE SCREENS (>1280px) ── */
@@ -907,7 +929,7 @@ body.dark .bottom-nav .bnav-badge{border-color:#0f172a}
   .bottom-nav{
     padding-bottom:calc(6px + env(safe-area-inset-bottom));
   }
-  body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+  body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 }
 
 /* ── PRINT ── */
@@ -924,13 +946,13 @@ body.dark .bottom-nav .bnav-item.active::before{background:linear-gradient(135de
 body.dark .bottom-nav .bnav-sell{
   box-shadow:0 4px 16px rgba(5,150,105,0.25);
 }
-body.dark .bottom-nav .bnav-badge{border-color:#0f172a}
+  body.dark .bottom-nav .bnav-badge{border-color:#0f172a}
 
 /* ── SMOOTH SCROLLBAR ── */
 *{scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
 @media(max-width:768px){
-  *{scrollbar-width:none}
-  *::-webkit-scrollbar{display:none}
+  .cat-bar{display:none}
+  .section-top{margin-top:10px}
 }
 
 /* ── REDUCED MOTION ── */
