@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: uzum-one
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        sync: false
+        value: uzum_one_super_secret_key_2024
+      - key: BOT_TOKEN
+        sync: false
+        value: 8949109917:AAHSDhYGrUhrhrDpQCo-CbJMr7rNpBHuVVs
+      - key: ADMIN_CHAT_ID
+        sync: false
+        value: 8218816767
+    healthCheckPath: /
+    autoDeploy: true
