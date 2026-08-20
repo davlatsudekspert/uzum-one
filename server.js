@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { initDatabase } = require('./database');
 
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
@@ -48,7 +49,9 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`UzumOne server running on http://localhost:${PORT}`);
-  startBot();
+initDatabase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`UzumOne server running on http://localhost:${PORT}`);
+    startBot();
+  });
 });

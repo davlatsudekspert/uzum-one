@@ -1,8 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-
-const DB_PATH = path.join(__dirname, 'data.json');
 
 const CATEGORIES = {
   'Hammasi': [],
@@ -14,38 +11,21 @@ const CATEGORIES = {
   'Boshqa': ['Xizmatlar', 'Hayvonlar', 'Kitoblar', 'Mebel', 'Boshqa']
 };
 
-const DEFAULT_COLLECTIONS = ['users', 'products', 'cartItems', 'likes', 'orders', 'messages', 'reports', 'reviews', 'offers', 'priceAlerts', 'phoneLinks'];
-const DEFAULT_NEXT_ID = { users: 3, products: 13, cartItems: 1, likes: 1, orders: 1, messages: 1, reports: 1, reviews: 1, offers: 1, priceAlerts: 1, phoneLinks: 1 };
+const TABLES = ['users', 'products', 'cartItems', 'likes', 'orders', 'messages', 'reports', 'reviews', 'offers', 'priceAlerts', 'phoneLinks'];
 
-function load() {
-  if (!fs.existsSync(DB_PATH)) {
-    const data = getDefaultData();
-    save(data);
-    return data;
-  }
-  const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
-  for (const col of DEFAULT_COLLECTIONS) {
-    if (!data[col]) data[col] = [];
-  }
-  if (!data.nextId) data.nextId = { ...DEFAULT_NEXT_ID };
-  for (const key of Object.keys(DEFAULT_NEXT_ID)) {
-    if (!data.nextId[key]) data.nextId[key] = DEFAULT_NEXT_ID[key];
-  }
-  return data;
-}
-
-function save(data) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-}
+let pool = null;
+let memData = null;
+let dbReady = false;
+let readyPromiseResolve = null;
+const readyPromise = new Promise(r => { readyPromiseResolve = r; });
 
 function getDefaultData() {
-  const hash = bcrypt.hashSync('123456', 10);
-  const hashMain = bcrypt.hashSync('UzumOneali1004', 10);
+  const hash = bcrypt.hashSync('UzumOneali1004', 10);
   return {
     users: [
-      { id: 1, name: 'Ali Seller', phone: '+998779633111', password: hashMain, role: 'admin', avatar: null, createdAt: new Date().toISOString() },
-      { id: 2, name: 'Shaxnoza Seller', phone: '+998979888277', password: hashMain, role: 'seller', avatar: null, createdAt: new Date().toISOString() },
-      { id: 3, name: "Yo'ldashali Seller", phone: '+998990118277', password: hashMain, role: 'seller', avatar: null, createdAt: new Date().toISOString() }
+      { id: 1, name: 'Ali Seller', phone: '+998779633111', password: hash, role: 'admin', avatar: null, createdAt: new Date().toISOString() },
+      { id: 2, name: 'Shaxnoza Seller', phone: '+998979888277', password: hash, role: 'seller', avatar: null, createdAt: new Date().toISOString() },
+      { id: 3, name: "Yo'ldashali Seller", phone: '+998990118277', password: hash, role: 'seller', avatar: null, createdAt: new Date().toISOString() }
     ],
     products: [
       { id: 1, userId: 1, name: 'Samsung Galaxy S24 Ultra', price: 18999999, category: 'Texnika', subcategory: 'Telefonlar', description: '256GB, 12GB RAM, Snapdragon 8 Gen 3, S Pen, 200MP kamera, Titan Gray', images: ['https://images.unsplash.com/photo-1610945265064-0e34e551a22f?w=800&q=80','https://images.unsplash.com/photo-1610945265064-0e34e551a22f?w=400&q=80','https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400&q=80'], location: 'Toshkent, Chilonzor', views: 142, createdAt: new Date().toISOString() },
@@ -68,42 +48,103 @@ function getDefaultData() {
   };
 }
 
+async function initDatabase() {
+  if (process.env.DATABASE_URL) {
+    pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS kv_store (
+          key TEXT PRIMARY KEY,
+          value JSONB NOT NULL
+        )
+      `);
+      const res = await pool.query('SELECT key, value FROM kv_store');
+      if (res.rows.length === 0) {
+        memData = getDefaultData();
+        await persistAll();
+      } else {
+        memData = {};
+        for (const row of res.rows) {
+          memData[row.key] = row.value;
+        }
+        for (const t of TABLES) {
+          if (!memData[t]) memData[t] = [];
+        }
+        if (!memData.nextId) {
+          memData.nextId = {};
+          for (const t of TABLES) {
+            const maxId = memData[t].reduce((mx, r) => Math.max(mx, r.id || 0), 0);
+            memData.nextId[t] = maxId + 1;
+          }
+        }
+      }
+      dbReady = true;
+      if (readyPromiseResolve) readyPromiseResolve();
+      console.log('[DB] PostgreSQL connected');
+    } catch (err) {
+      console.error('[DB] PostgreSQL error, falling back to memory:', err.message);
+      memData = getDefaultData();
+      dbReady = true;
+      if (readyPromiseResolve) readyPromiseResolve();
+    }
+  } else {
+    memData = getDefaultData();
+    dbReady = true;
+    if (readyPromiseResolve) readyPromiseResolve();
+    console.log('[DB] No DATABASE_URL, using in-memory defaults');
+  }
+}
+
+async function persistAll() {
+  if (!pool) return;
+  try {
+    for (const key of [...TABLES, 'nextId']) {
+      await pool.query(
+        'INSERT INTO kv_store (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+        [key, JSON.stringify(memData[key])]
+      );
+    }
+  } catch (err) {
+    console.error('[DB] Persist error:', err.message);
+  }
+}
+
+function waitForReady() { return readyPromise; }
+
 const db = {
-  load,
-  save,
+  waitForReady,
   query(table) {
-    const data = load();
     return {
-      all() { return data[table] || []; },
-      find(predicate) { return (data[table] || []).find(predicate); },
-      filter(predicate) { return (data[table] || []).filter(predicate); },
+      all() { return memData[table] || []; },
+      find(predicate) { return (memData[table] || []).find(predicate); },
+      filter(predicate) { return (memData[table] || []).filter(predicate); },
       insert(item) {
-        const list = data[table];
-        const id = data.nextId[table] || 1;
+        const list = memData[table];
+        const id = memData.nextId[table] || 1;
         item.id = id;
-        data.nextId[table] = id + 1;
+        memData.nextId[table] = id + 1;
         list.push(item);
-        save(data);
+        persistAll();
         return item;
       },
       update(id, changes) {
-        const list = data[table];
+        const list = memData[table];
         const idx = list.findIndex(x => x.id === id);
         if (idx === -1) return null;
         list[idx] = { ...list[idx], ...changes };
-        save(data);
+        persistAll();
         return list[idx];
       },
       delete(id) {
-        const list = data[table];
+        const list = memData[table];
         const idx = list.findIndex(x => x.id === id);
         if (idx === -1) return false;
         list.splice(idx, 1);
-        save(data);
+        persistAll();
         return true;
       },
       updateWhere(predicate, changes) {
-        const list = data[table];
+        const list = memData[table];
         let count = 0;
         for (const item of list) {
           if (predicate(item)) {
@@ -111,21 +152,21 @@ const db = {
             count++;
           }
         }
-        if (count > 0) save(data);
+        if (count > 0) persistAll();
         return count;
       },
       deleteWhere(predicate) {
-        const list = data[table];
+        const list = memData[table];
         const toRemove = list.filter(predicate);
         for (const item of toRemove) {
           const idx = list.indexOf(item);
           list.splice(idx, 1);
         }
-        save(data);
+        if (toRemove.length > 0) persistAll();
         return toRemove.length;
       }
     };
   }
 };
 
-module.exports = { db, CATEGORIES };
+module.exports = { db, CATEGORIES, initDatabase };

@@ -16,6 +16,7 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "node-telegram-bot-api": "^0.66.0",
+    "pg": "^8.23.0",
     "prisma": "^7.9.1"
   }
 }
